@@ -26,7 +26,7 @@ def decode_lux(data: bytearray):
     hi = data[8]
     lo = data[9]
     raw_value = hi * 256 + lo
-    lux = raw_value * 0.02862
+    lux = raw_value / 1000 / 27.6 * 790
     return lux
 
 def callback(sender: bleak.BleakGATTCharacteristic, data: bytearray):
@@ -37,8 +37,16 @@ def callback(sender: bleak.BleakGATTCharacteristic, data: bytearray):
         log_file.write(f'{timestamp},{reading}\n')
     print(f'{timestamp} {reading:.3f}')
 
+
+SUCCESS = 1
+ERROR = 2
+NO_DEVICE = 3
+CANCELED = 4
+
+
 async def main():
-    print("VBR-SOLAR Logger v. 0.1")
+    '''Return False if the user aborted the listening'''
+    print("VBR-SOLAR Logger v. 0.2")
     print("Scanning, please wait...")
 
     devices = await bleak.BleakScanner.discover()
@@ -46,7 +54,7 @@ async def main():
 
     if len(named_devices) == 0:
         print("No device found.")
-        return
+        return NO_DEVICE
 
     num_of_devices = len(named_devices)
 
@@ -61,7 +69,7 @@ async def main():
     while True:
         i = int(input("Select a device (0 to exit): "))
         if i <= 0:
-            return
+            return CANCELED
         elif i <= len(named_devices):
             break
 
@@ -69,7 +77,7 @@ async def main():
     listening_time = int(input("Listening time (in seconds, 0 to exit): "))
 
     if listening_time == 0:
-        return
+        return CANCELED
 
     log_file_path = None
     save_data_to_file = input("Save data to file [y/N]? ")
@@ -99,10 +107,18 @@ async def main():
         if log_file:
             log_file.close()
             log_file = None
-        
+    print("Listening completed.")
+    return SUCCESS
 
 if __name__ == "__main__":
+    response = SUCCESS
     try:
-        asyncio.run(main())
+        response = asyncio.run(main())
     except KeyboardInterrupt:
+        response = CANCELED
         print("Listening aborted.")
+    except Exception as e:
+        response = ERROR
+        print(f"Error: {e}")
+    if response != CANCELED:
+        input("Press ENTER to exit...")
