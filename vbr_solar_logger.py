@@ -23,11 +23,8 @@ def to_hex(data: bytearray, separator: str = ' ') -> str:
 def decode_lux(data: bytearray):
     if len(data) != 20:
         raise ValueError("Unexpected buffer length")
-    hi = data[8]
-    lo = data[9]
-    raw_value = hi * 256 + lo
-    lux = raw_value / 1000 / 27.6 * 790
-    return lux
+    dword = (data[6] << 24) + (data[7] << 16) + (data[8] << 8) + data[9]
+    return dword / 1000 / 27.6 * 790
 
 def callback(sender: bleak.BleakGATTCharacteristic, data: bytearray):
     global log_file
@@ -46,7 +43,7 @@ CANCELED = 4
 
 async def main():
     '''Return False if the user aborted the listening'''
-    print("VBR-SOLAR Logger v. 0.2")
+    print("VABIRA VBR-Solar Logger v. 0.3")
     print("Scanning, please wait...")
 
     devices = await bleak.BleakScanner.discover()
@@ -64,7 +61,7 @@ async def main():
         print(f"{num_of_devices} devices found:")
 
     for i, device in enumerate(named_devices):
-        print(f"{i+1:>3}. {device.name}")
+        print(f"{i+1:>3}. {device.address} - {device.name}")
 
     while True:
         i = int(input("Select a device (0 to exit): "))
