@@ -20,7 +20,7 @@ log_file = None
 def to_hex(data: bytearray, separator: str = ' ') -> str:
     return separator.join(f'{b:02x}' for b in data)
 
-def decode_lux(data: bytearray):
+def decode_irradiance(data: bytearray):
     if len(data) != 20:
         raise ValueError("Unexpected buffer length")
     dword = (data[6] << 24) + (data[7] << 16) + (data[8] << 8) + data[9]
@@ -29,7 +29,7 @@ def decode_lux(data: bytearray):
 def callback(sender: bleak.BleakGATTCharacteristic, data: bytearray):
     global log_file
     timestamp = datetime.now().isoformat()
-    reading = decode_lux(data)
+    reading = decode_irradiance(data)
     if log_file:
         log_file.write(f'{timestamp},{reading}\n')
     print(f'{timestamp} {reading:.3f}')
